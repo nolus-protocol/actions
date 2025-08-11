@@ -1,0 +1,69 @@
+name: "Build container image"
+description: "Action for building a container image with caches, when possible."
+author: "The Dev Nolus Team <dev@nolus.io>"
+
+inputs:
+  build-arguments:
+    description: "A multiline string containing pairs of the form: <Name>=<Value>."
+    required: false
+  build-contexts:
+    description: "A multiline string containing pairs of the form: <Name>=<Path>."
+    required: false
+  context:
+    description: "Path for the main context to be used."
+    required: true
+  file:
+    description: "Path for the Dockerfile/Containerfile to use used."
+    required: true
+  tag_prefix:
+    description: "Null, or a string value to be prefixed as a namespace, e.g. \"<prefix>/<target>\"."
+    required: false
+  target:
+    description: ""
+    required: true
+
+outputs:
+  tag:
+    description: ""
+    value: |-
+      ${{ steps.tag.outputs.tag }}
+
+runs:
+  using: "composite"
+  steps:
+    - env:
+        image_tag: |-
+          localhost/local/${{ inputs.target }}
+      id: "tag"
+      run: |-
+        set -eu
+
+        "echo" "tag<<EOF
+        ${image_tag:?}
+        EOF" >>"${GITHUB_OUTPUT:?}"
+      shell: "sh"
+    - env:
+        DOCKER_BUILD_RECORD_UPLOAD: "false"
+        DOCKER_BUILD_SUMMARY: "false"
+        SOURCE_DATE_EPOCH: "0"
+      id: "build-container"
+      uses: "docker/build-push-action@v6"
+      with:
+        build-args: |-
+          ${{ inputs.build-arguments || '' }}
+        build-contexts: |-
+          ${{ inputs.build-contexts || '' }}
+        cache-from: |-
+          ${{ (runner.environment == 'github-hosted' && format('type=gha,scope={0}', inputs.target)) || '' }}
+        cache-to: |-
+          ${{ (runner.environment == 'github-hosted' && format('type=gha,mode=max,scope={0}', inputs.target)) || '' }}
+        context: |-
+          ${{ inputs.context }}
+        file: |-
+          ${{ inputs.file }}
+        outputs: "type=docker,rewrite-timestamp=true"
+        provenance: false
+        tags: |-
+          ${{ steps.tag.outputs.tag }}
+        target: |-
+          ${{ inputs.target }}
