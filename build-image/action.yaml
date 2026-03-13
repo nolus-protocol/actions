@@ -17,7 +17,7 @@ inputs:
     required: true
   tag-prefix:
     default: "localhost/local"
-    description: "Null, or a string value to be prefixed as a namespace, e.g. \"<prefix>/<target>\"."
+    description: 'Null, or a string value to be prefixed as a namespace, e.g. "<prefix>/<target>".'
     required: false
   target:
     description: ""
@@ -48,7 +48,7 @@ runs:
         DOCKER_BUILD_SUMMARY: "false"
         SOURCE_DATE_EPOCH: "0"
       id: "build-container"
-      uses: "docker/build-push-action@v6"
+      uses: "docker/build-push-action@v7"
       with:
         build-args: |-
           ${{ inputs.build-arguments || '' }}
